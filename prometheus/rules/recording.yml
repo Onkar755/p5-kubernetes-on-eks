@@ -1,0 +1,11 @@
+groups:
+  - name: http_recording_rules
+    rules:
+      - record: job:http_error_ratio:rate5m
+        expr: |
+          (
+            sum by (job) (rate(http_requests_total{status=~"5.."}[5m]))
+            /
+            sum by (job) (rate(http_requests_total[5m]))
+          )
+          or vector(0)

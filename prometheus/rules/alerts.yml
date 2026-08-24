@@ -1,0 +1,29 @@
+groups:
+  - name: http_alerts
+    rules:
+      - alert: HighHTTPErrorRate
+        expr: job:http_error_ratio:rate5m > 0.05
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High HTTP error rate detected"
+          description: "HTTP 5xx error ratio is above 5% for more than 2 minutes."
+
+      - alert: FastAPITargetMissing
+        expr: absent(up{job="fastapi"})
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "FastAPI target missing from Prometheus"
+          description: "Prometheus is no longer discovering the FastAPI target."
+      
+      - alert: FastAPITargetDown
+        expr: up{job="fastapi"} == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "FastAPI target is down"
+          description: "Prometheus cannot scrape the FastAPI application."
