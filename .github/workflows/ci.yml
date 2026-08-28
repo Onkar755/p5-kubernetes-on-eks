@@ -37,6 +37,11 @@ jobs:
       - name: Test
         run: make test
 
+      - name: Inspect GitHub OIDC claims
+        uses: github/actions-oidc-debugger@main
+        with:
+          audience: sts.amazonaws.com
+
       - name: Configure AWS credentials
         if: github.event_name == 'push'
         uses: aws-actions/configure-aws-credentials@v6.2.3
