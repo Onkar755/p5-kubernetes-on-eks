@@ -38,9 +38,35 @@ jobs:
         run: make test
 
       - name: Inspect GitHub OIDC claims
-        uses: github/actions-oidc-debugger@main
-        with:
-          audience: sts.amazonaws.com
+        if: github.event_name == 'push'
+        shell: bash
+        run: |
+          OIDC_TOKEN=$(curl -sS \
+            -H "Authorization: bearer ${ACTIONS_ID_TOKEN_REQUEST_TOKEN}" \
+            "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=sts.amazonaws.com" \
+            | python -c 'import sys,json; print(json.load(sys.stdin)["value"])')
+
+          export OIDC_TOKEN
+
+          python <<'PY'
+          import os
+          import json
+          import base64
+
+          token = os.environ["OIDC_TOKEN"]
+          payload = token.split(".")[1]
+          payload += "=" * (-len(payload) % 4)
+
+          claims = json.loads(
+              base64.urlsafe_b64decode(payload).decode()
+          )
+
+          print("sub:", claims.get("sub"))
+          print("aud:", claims.get("aud"))
+          print("repository:", claims.get("repository"))
+          print("ref:", claims.get("ref"))
+          print("event_name:", claims.get("event_name"))
+          PY
 
       - name: Configure AWS credentials
         if: github.event_name == 'push'
