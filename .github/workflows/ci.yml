@@ -3,12 +3,22 @@ name: CI
 on:
   push:
     branches: [main]
+
   pull_request:
     branches: [main]
+
+permissions:
+  contents: read
+  id-token: write
+
+env:
+  AWS_REGION: ap-south-1
+  ECR_REPOSITORY: p5-fastapi-app
 
 jobs:
   quality-gate:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -27,5 +37,31 @@ jobs:
       - name: Test
         run: make test
 
-      - name: Build Docker image
-        run: docker build -t webapp-demo:ci .
+      - name: Configure AWS credentials
+        if: github.event_name == 'push'
+        uses: aws-actions/configure-aws-credentials@v6.2.3
+        with:
+          role-to-assume: arn:aws:iam::872891100238:role/p5-github-actions-ecr-role
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Verify AWS identity
+        if: github.event_name == 'push'
+        run: aws sts get-caller-identity
+
+      - name: Login to Amazon ECR
+        if: github.event_name == 'push'
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build and push Docker image
+        if: github.event_name == 'push'
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          docker build \
+            -t "$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" \
+            .
+
+          docker push \
+            "$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
