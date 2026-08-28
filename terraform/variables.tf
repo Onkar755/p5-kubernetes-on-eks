@@ -38,3 +38,23 @@ variable "eks_admin_principal_arn" {
   type        = string
   description = "IAM principal granted cluster-admin access to EKS"
 }
+
+variable "github_owner" {
+  description = "GitHub username or organization"
+  type        = string
+}
+
+variable "github_repository" {
+  description = "GitHub repository name"
+  type        = string
+}
+
+variable "github_owner_id" {
+  description = "Immutable GitHub owner ID"
+  type        = string
+}
+
+variable "github_repository_id" {
+  description = "Immutable GitHub repository ID"
+  type        = string
+}

@@ -31,3 +31,13 @@ output "eks_cluster_endpoint" {
 output "eks_cluster_security_group_id" {
   value = aws_eks_cluster.main.vpc_config[0].cluster_security_group_id
 }
+
+output "ecr_repository_url" {
+  description = "URL of the application ECR repository"
+  value       = aws_ecr_repository.app.repository_url
+}
+
+output "github_actions_role_arn" {
+  description = "IAM role assumed by GitHub Actions through OIDC"
+  value       = aws_iam_role.github_actions_ecr.arn
+}
