@@ -3,21 +3,31 @@ name: CI
 on:
   push:
     branches: [main]
+    paths-ignore:
+      - "terraform/**"
+      - "k8s/**"
+      - "README.md"
+      - "docs/**"
+      - ".gitignore"
 
   pull_request:
     branches: [main]
+    paths-ignore:
+      - "terraform/**"
+      - "k8s/**"
+      - "README.md"
+      - "docs/**"
+      - ".gitignore"
 
-permissions:
-  contents: read
-  id-token: write
-
-env:
-  AWS_REGION: ap-south-1
-  ECR_REPOSITORY: p5-fastapi-app
+  workflow_dispatch:
 
 jobs:
   quality-gate:
+    name: Quality Gate
     runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
 
     steps:
       - name: Checkout repository
@@ -37,55 +47,37 @@ jobs:
       - name: Test
         run: make test
 
-      - name: Inspect GitHub OIDC claims
-        if: github.event_name == 'push'
-        shell: bash
-        run: |
-          OIDC_TOKEN=$(curl -sS \
-            -H "Authorization: bearer ${ACTIONS_ID_TOKEN_REQUEST_TOKEN}" \
-            "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=sts.amazonaws.com" \
-            | python -c 'import sys,json; print(json.load(sys.stdin)["value"])')
+  publish-image:
+    name: Build and Push Image
+    runs-on: ubuntu-latest
 
-          export OIDC_TOKEN
+    needs: quality-gate
 
-          python <<'PY'
-          import os
-          import json
-          import base64
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
 
-          token = os.environ["OIDC_TOKEN"]
-          payload = token.split(".")[1]
-          payload += "=" * (-len(payload) % 4)
+    permissions:
+      contents: read
+      id-token: write
 
-          claims = json.loads(
-              base64.urlsafe_b64decode(payload).decode()
-          )
+    env:
+      AWS_REGION: ${{ vars.AWS_REGION }}
+      ECR_REPOSITORY: ${{ vars.ECR_REPOSITORY }}
 
-          print("sub:", claims.get("sub"))
-          print("aud:", claims.get("aud"))
-          print("repository:", claims.get("repository"))
-          print("ref:", claims.get("ref"))
-          print("event_name:", claims.get("event_name"))
-          PY
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
       - name: Configure AWS credentials
-        if: github.event_name == 'push'
         uses: aws-actions/configure-aws-credentials@v6.2.3
         with:
-          role-to-assume: arn:aws:iam::872891100238:role/p5-github-actions-ecr-role
+          role-to-assume: ${{ vars.AWS_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
 
-      - name: Verify AWS identity
-        if: github.event_name == 'push'
-        run: aws sts get-caller-identity
-
       - name: Login to Amazon ECR
-        if: github.event_name == 'push'
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v2
 
       - name: Build and push Docker image
-        if: github.event_name == 'push'
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
           IMAGE_TAG: ${{ github.sha }}
