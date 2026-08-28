@@ -3,22 +3,26 @@ name: CI
 on:
   push:
     branches: [main]
-    paths-ignore:
-      - "terraform/**"
-      - "k8s/**"
-      - "README.md"
-      - "docs/**"
-      - ".gitignore"
+    paths:
+      - "**/*.py"
+      - "tests/**"
+      - "Dockerfile"
+      - "requirements*.txt"
+      - "pyproject.toml"
+      - "Makefile"
 
   pull_request:
     branches: [main]
-    paths-ignore:
-      - "terraform/**"
-      - "k8s/**"
-      - "README.md"
-      - "docs/**"
-      - ".gitignore"
+    paths:
+      - "**/*.py"
+      - "tests/**"
+      - "Dockerfile"
+      - "requirements*.txt"
+      - "pyproject.toml"
+      - "Makefile"
 
+  # Allows rebuilding the current commit manually,
+  # useful after Terraform recreates an empty ECR repository.
   workflow_dispatch:
 
 jobs:
@@ -53,6 +57,9 @@ jobs:
 
     needs: quality-gate
 
+    # PRs only run quality checks.
+    # Images are published only from main pushes
+    # or an explicit manual workflow run.
     if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
 
     permissions:
