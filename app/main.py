@@ -25,6 +25,21 @@ def health():
     return {"status": "healthy"}
 
 
+@app.get("/health/ready")
+def readiness():
+    if not chaos.ready:
+        raise HTTPException(status_code=503, detail="not ready")
+
+    return {"status": "ready"}
+
+
+@app.get("/health/live")
+def liveness():
+    if not chaos.alive:
+        raise HTTPException(status_code=503, detail="not alive")
+
+    return {"status": "alive"}
+
 def fizzbuzz(number: int) -> int | str:
     if number % 15 == 0:
         return "FizzBuzz"
@@ -94,17 +109,20 @@ class ChaosConfig(BaseModel):
 
     error_rate: ErrorRate = 0.0
     latency_multiplier: LatencyMultiplier = 1.0
+    ready: bool = True
+    alive: bool = True
 
 
 class ChaosUpdate(BaseModel):
     """Body for PUT /admin/chaos.
 
-    Both fields are required, so PUT is a full replacement: a partial body is
-    a 422 rather than a silent reset of the field that was left out.
+    PUT remains a full replacement so experiments are explicit and repeatable.
     """
 
     error_rate: ErrorRate
     latency_multiplier: LatencyMultiplier
+    ready: bool
+    alive: bool
 
 
 chaos = ChaosConfig()
@@ -140,10 +158,10 @@ async def get_chaos():
 
 @app.put("/admin/chaos", response_model=ChaosConfig)
 async def put_chaos(update: ChaosUpdate):
-    # Mutate the singleton in place rather than rebinding the module global,
-    # so anything holding a reference to it sees the update.
     chaos.error_rate = update.error_rate
     chaos.latency_multiplier = update.latency_multiplier
+    chaos.ready = update.ready
+    chaos.alive = update.alive
 
     return chaos
 

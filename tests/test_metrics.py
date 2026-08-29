@@ -78,6 +78,8 @@ def test_resolve_route_returns_fallback_for_unmatched_path():
 
 def test_metrics_and_health_are_excluded_from_instrumentation():
     client.get("/health")
+    client.get("/health/ready")
+    client.get("/health/live")
     client.get("/metrics")
 
     response = client.get("/metrics")
@@ -85,7 +87,7 @@ def test_metrics_and_health_are_excluded_from_instrumentation():
     assert "http_requests_total{" not in response.text
     assert "http_request_duration_seconds_bucket{" not in response.text
     assert "http_requests_in_flight{" not in response.text
-
+    
 def test_http_500_is_recorded(monkeypatch):
     monkeypatch.setattr(main.chaos, "error_rate", 1.0)
 

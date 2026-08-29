@@ -13,7 +13,14 @@ from starlette.routing import Match
 disable_created_metrics()
 
 REGISTRY = CollectorRegistry()
-EXCLUDED_ROUTES = frozenset({"/metrics", "/health"})
+EXCLUDED_ROUTES = frozenset(
+    {
+        "/metrics",
+        "/health",
+        "/health/ready",
+        "/health/live",
+    }
+)
 UNMATCHED_ROUTE = "__unmatched__"
 
 REQUEST_COUNT = Counter(

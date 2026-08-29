@@ -63,3 +63,37 @@ def test_count_endpoint_returns_incremented_value(monkeypatch):
     assert response.status_code == 200
     assert response.json() == {"count": 42}
     mock_incr.assert_called_once_with("count")
+
+
+def test_readiness_returns_200_when_ready(monkeypatch):
+    monkeypatch.setattr(main.chaos, "ready", True)
+
+    response = client.get("/health/ready")
+
+    assert response.status_code == 200
+    assert response.json() == {"status": "ready"}
+
+
+def test_readiness_returns_503_when_not_ready(monkeypatch):
+    monkeypatch.setattr(main.chaos, "ready", False)
+
+    response = client.get("/health/ready")
+
+    assert response.status_code == 503
+
+
+def test_liveness_returns_200_when_alive(monkeypatch):
+    monkeypatch.setattr(main.chaos, "alive", True)
+
+    response = client.get("/health/live")
+
+    assert response.status_code == 200
+    assert response.json() == {"status": "alive"}
+
+
+def test_liveness_returns_503_when_not_alive(monkeypatch):
+    monkeypatch.setattr(main.chaos, "alive", False)
+
+    response = client.get("/health/live")
+
+    assert response.status_code == 503
