@@ -41,3 +41,13 @@ output "github_actions_role_arn" {
   description = "IAM role assumed by GitHub Actions through OIDC"
   value       = aws_iam_role.github_actions_ecr.arn
 }
+
+output "eks_oidc_provider_arn" {
+  description = "IAM OIDC provider used by EKS IRSA"
+  value       = aws_iam_openid_connect_provider.eks.arn
+}
+
+output "alb_controller_role_arn" {
+  description = "IAM role assumed by AWS Load Balancer Controller through IRSA"
+  value       = aws_iam_role.alb_controller.arn
+}
