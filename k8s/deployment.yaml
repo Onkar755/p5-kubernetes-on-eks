@@ -18,10 +18,25 @@ spec:
         app: fastapi
 
     spec:
+      automountServiceAccountToken: false
+
+      securityContext:
+        seccompProfile:
+          type: RuntimeDefault
+
       containers:
         - name: fastapi
           image: IMAGE_PLACEHOLDER
           imagePullPolicy: IfNotPresent
+
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 10001
+            runAsGroup: 10001
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
 
           ports:
             - name: http
